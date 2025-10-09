@@ -5,6 +5,11 @@ import torch.optim as optim
 import math, torch
 from torch.func import functional_call
 from torch.autograd.functional import hvp
+from ucimlrepo import fetch_ucirepo
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, TensorDataset
+import torch
 
 class SimpleNeuralNetwork(nn.Module):
   #Initializes a standard neural network with one hidden layer
@@ -104,3 +109,43 @@ def max_hessian_eigval(model, criterion, x, y, iters=20, tol=1e-6):
     #Calculating the Rayleigh Quotient to isolate largest eigenvalue
     _, Hv = hvp(loss_fn, params0, v)
     return tup_dot(v, Hv).item()
+
+
+#Fetching dataset from open-source machine learning repo
+wine_quality = fetch_ucirepo(id=186)
+
+#Turning the data into features and outputs
+X = wine_quality.data.features
+y = wine_quality.data.targets
+
+#Organizing features as a Pandas dataframe
+df = wine_quality.data.features
+df.hist(column='alcohol', bins=50)
+
+#Splitting output features into two classes
+targets = wine_quality.data.targets
+labels = (targets >= 7).astype(int)
+labels.value_counts()
+#Transforming labels to a Numpy-editable format
+labels=labels["quality"].to_numpy()
+X = df.to_numpy()
+
+#Splitting datasets into training, validation, and test groups
+X_train, X_test, Y_train, Y_test = train_test_split(X, labels, test_size=0.20, random_state=42)
+x_train, x_val, y_train, y_val = train_test_split(X_train, Y_train, test_size=0.20, random_state=42)
+x_train.shape
+
+#Z-score scaling
+m = x_train.mean(axis=0)
+std = x_train.std(axis=0)
+x_train = (x_train-m)/std
+
+x_val = (x_val-m)/std
+x_test = (X_test-m)/std
+
+#Creating the trainable data set in randomly shuffled batches
+num_epochs = 75
+dataset = TensorDataset(torch.tensor(x_train, dtype=torch.float32), torch.tensor(y_train[:, None], dtype=torch.float32))
+dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+val_dataset = TensorDataset(torch.tensor(x_val, dtype=torch.float32), torch.tensor(y_val[:, None], dtype = torch.float32))
+val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
