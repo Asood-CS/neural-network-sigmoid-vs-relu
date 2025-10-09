@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 import torch
+import numpy as np
 
 class SimpleNeuralNetwork(nn.Module):
   #Initializes a standard neural network with one hidden layer
@@ -149,3 +150,45 @@ dataset = TensorDataset(torch.tensor(x_train, dtype=torch.float32), torch.tensor
 dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 val_dataset = TensorDataset(torch.tensor(x_val, dtype=torch.float32), torch.tensor(y_val[:, None], dtype = torch.float32))
 val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+
+def calculate_f1(outputs, labels, threshold):
+  #Finding accurate model predictions
+  predictions = (outputs >= threshold).int()
+  #Creating a confusion matrix of predictions
+  true_positives = ((predictions == 1) & (labels == 1)).sum().item()
+  false_positives = ((predictions == 1) & (labels == 0)).sum().item()
+  false_negatives = ((predictions == 0) & (labels == 1)).sum().item()
+  #Balancing precision and recall using the F1 Score algorithm
+  precision = true_positives / (true_positives + false_positives + 1e-8)
+  recall = true_positives / (true_positives + false_negatives + 1e-8)
+  f1 = 2 * (precision * recall) / (precision + recall + 1e-8)
+  return f1
+
+def find_best_f1(outputs, labels):
+  best_f1 = 0
+  best_threshold = 0
+  #Identifying which model threshold yields the best F1 Score
+  for threshold in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]:
+    f1 = calculate_f1(outputs, labels, threshold)
+    if f1 > best_f1:
+      best_f1 = f1
+      best_threshold = threshold
+  return best_f1, best_threshold
+
+columns = [
+    'epoch',             # int or NaN if unknown
+    'step',              # int or NaN if unknown
+    'activation',        # string ('relu' or 'sigmoid')
+    'train_loss',        # float (NaN if not logged at step)
+    'val_loss',          # float (NaN if not logged at step)
+    'f1_score',          # float (NaN if not logged at step)
+    'lipschitz_upper',   # float (NaN if not logged at epoch)
+    'lipschitz_lower',   # float (NaN if not logged at epoch)
+    'max_hessian_eigval' # float (NaN if not logged at epoch)
+]
+
+#Transforming these parameters into a data frame
+df = pd.DataFrame({col: pd.Series(dtype='float') for col in columns})
+
+# Explicitly setting the activation column data type as string
+df['activation'] = df['activation'].astype('string')
