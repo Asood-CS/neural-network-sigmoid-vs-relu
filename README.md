@@ -11,7 +11,7 @@ As my experiments yielded conclusive results, I used this investigation to form 
 - Modular, reproducible workflow via Google Colab notebooks
 
 ## Results Summary
-![Eigenvalues Comparison](extended_essay/figures/Sigmoid%20%26%20ReLU%20Max%20Hessian%20Eigenvalue.png)
+![Eigenvalues Comparison](extended%20essay/figures/Sigmoid%20%26%20ReLU%20Max%20Hessian%20Eigenvalue.png)
 - The Sigmoid function flattens loss surfaces, as its vanishing gradient make the model move slowly towards a loss minimum with negligible local curvature
 - Conversely, ReLU optimizes by aggressively exploring loss surfaces, as unbounded gradients increase loss curvature and cause large fluctuations
 - While ReLU's robustness can lead to training instability, its tendency to explore means that it often finds local minima faster than Sigmoid
