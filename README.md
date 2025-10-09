@@ -4,7 +4,6 @@ This project explores how the choice of activation function in vanilla neural ne
 As my experiments yielded conclusive results, I used this investigation to form the basis of my International Baccalaureate (IB) Extended Essay in mathematics, addressing the research question: "To what extent does the activation function of a neural network impact the smoothness and curvature of its loss function?"
 
 ## Project Structure
-'''
 project-root/
 ├─ README.md # Overview and documentation
 ├─ LICENSE # Usage license (MIT)
@@ -38,4 +37,3 @@ project-root/
 │ ├─ Extended_Essay_Progress_Draft.pdf
 │ └─ Extended_Essay_Final.pdf
 └─ requirements.txt # Python dependencies
-'''
