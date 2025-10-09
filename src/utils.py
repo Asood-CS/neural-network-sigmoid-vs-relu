@@ -1,4 +1,7 @@
-#Master code file for my neural networks project
+"""
+utils.py — shared functions for neural network training included in certain notebooks.
+Listed here as a master file, showcasing the entire training process from start to end. 
+"""
 
 import torch.nn as nn
 import torch.nn.functional as F
