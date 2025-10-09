@@ -121,8 +121,8 @@ X = wine_quality.data.features
 y = wine_quality.data.targets
 
 #Organizing features as a Pandas dataframe
-df = wine_quality.data.features
-df.hist(column='alcohol', bins=50)
+df_features = wine_quality.data.features
+df_features.hist(column='alcohol', bins=50)
 
 #Splitting output features into two classes
 targets = wine_quality.data.targets
@@ -130,7 +130,7 @@ labels = (targets >= 7).astype(int)
 labels.value_counts()
 #Transforming labels to a Numpy-editable format
 labels=labels["quality"].to_numpy()
-X = df.to_numpy()
+X = df_features.to_numpy()
 
 #Splitting datasets into training, validation, and test groups
 X_train, X_test, Y_train, Y_test = train_test_split(X, labels, test_size=0.20, random_state=42)
