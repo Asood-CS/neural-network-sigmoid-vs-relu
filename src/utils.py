@@ -1,4 +1,5 @@
-#Importing neural network modules from PyTorch
+#Master code file for my neural networks project
+
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -192,3 +193,101 @@ df = pd.DataFrame({col: pd.Series(dtype='float') for col in columns})
 
 # Explicitly setting the activation column data type as string
 df['activation'] = df['activation'].astype('string')
+
+def train_and_log(activation_name, activation_fn):
+    #Re-establishing key hyperparameters
+    factor = 0.95
+    model = SimpleNeuralNetwork(activation=activation_fn)
+    optimizer = optim.Adam(model.parameters(), lr=5e-4)
+    criterion = nn.BCELoss()
+
+    logs = []
+    train_loss = None
+
+    #Training over multiple epochs
+    for epoch in range(num_epochs):
+        model.train()
+        for step, (batch_x, batch_y) in enumerate(dataloader):
+            #Calculating Lipschitz metrics at the start of each training step
+            optimizer.zero_grad()
+
+            lower = lipschitz_lower_bound(model, batch_x)
+            upper = lipschitz_upper_bound(model, 0.25)
+
+            #Calculating loss and performing backpropagation
+            outputs = model(batch_x)
+            loss = criterion(outputs, batch_y)
+            loss.backward()
+
+            optimizer.step()
+
+            #Calculating largest Hessian eigenvalue
+            lam_max = max_hessian_eigval(model, criterion, batch_x.detach(), batch_y.detach())
+
+            if train_loss is None:
+                train_loss = loss.detach().item()
+            else:
+                train_loss = factor * train_loss + (1 - factor) * loss.detach().item()
+
+            #Logging metrics per step on data frame
+            logs.append({
+                'epoch': epoch,
+                'step': step,
+                'activation': activation_name,
+                'train_loss': np.nan,
+                'val_loss': np.nan,
+                'f1_score': np.nan,
+                'lipschitz_upper': upper,
+                'lipschitz_lower': lower,
+                'max_hessian_eigval': lam_max
+            })
+
+        #Running model in evaluation mode against validation data
+        model.eval()
+        with torch.no_grad():
+            val_labels = []
+            val_predictions = []
+            val_outputs = []
+            val_losses = []
+
+            #Calculating loss metrics for the validation set 
+            for val_x, val_y in val_dataloader:
+                outputs = model(val_x)
+                loss = criterion(outputs, val_y)
+                predictions = (outputs >= 0.5).int()
+                val_labels.append(val_y)
+                val_predictions.append(predictions)
+                val_outputs.append(outputs)
+                val_losses.append(loss)
+
+            val_labels = torch.cat(val_labels, dim=0)
+            val_predictions = torch.cat(val_predictions, dim=0)
+            val_outputs = torch.cat(val_outputs, dim=0)
+            val_loss = torch.stack(val_losses).mean().item()
+
+            best_f1, best_threshold = find_best_f1(val_outputs, val_labels)
+
+        #Condensing step-level logs into an epoch-level log
+        logs.append({
+            'epoch': epoch,
+            'step': np.nan,
+            'activation': activation_name,
+            'train_loss': train_loss,
+            'val_loss': val_loss,
+            'f1_score': best_f1,
+            'lipschitz_upper': np.nan,
+            'lipschitz_lower': np.nan,
+            'max_hessian_eigval': np.nan
+        })
+    return logs
+
+#Training and logging for both activation functions
+all_logs = []
+
+for act_name, act_fn in [('relu', F.relu), ('sigmoid', torch.sigmoid)]:
+    logs = train_and_log(act_name, act_fn)
+    all_logs.extend(logs)
+
+#Creating a combined data frame after all runs
+df_all = pd.DataFrame(all_logs)
+
